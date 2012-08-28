@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/integration"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+                  http://www.springframework.org/schema/beans/spring-beans.xsd
+                  http://www.springframework.org/schema/integration
+                  http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+    <gateway id="sender" service-interface="com.github.aheusingfeld.javaone2012.eai.gateways.Sender" default-request-channel="sample-channel"/>
+
+    <channel id="sample-channel"/>
+
+    <filter id="simple-filter" input-channel="sample-channel" output-channel="matching-msg-channel" discard-channel="non-matching-msg-channel"
+            expression="payload['ORDER_NUMBER'] > 0"/>
+
+    <channel id="matching-msg-channel"/>
+
+    <channel id="non-matching-msg-channel"/>
+
+    <logging-channel-adapter channel="non-matching-msg-channel" log-full-message="true"/>
+
+</beans:beans>
