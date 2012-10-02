@@ -1,0 +1,102 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.github.aheusingfeld.javaone2012</groupId>
+  <artifactId>eai-patterns</artifactId>
+  <packaging>war</packaging>
+  <version>1.0</version>
+    <properties>
+        <spring.version>3.1.2.RELEASE</spring.version>
+        <spring-integration.version>2.1.3.RELEASE</spring-integration.version>
+        <slf4j.version>1.6.1</slf4j.version>
+        <logback.version>1.0.7</logback.version>
+        <junit.version>4.7</junit.version>
+    </properties>
+    <name>eai-patterns Maven Webapp</name>
+  <url>http://github.com/aheusingfeld/javaone2012/</url>
+
+  <dependencies>
+      <dependency>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-core</artifactId>
+          <version>${spring.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-beans</artifactId>
+          <version>${spring.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-context</artifactId>
+          <version>${spring.version}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>org.springframework.integration</groupId>
+          <artifactId>spring-integration-core</artifactId>
+          <version>${spring-integration.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>org.springframework.integration</groupId>
+          <artifactId>spring-integration-file</artifactId>
+          <version>${spring-integration.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>org.springframework.integration</groupId>
+          <artifactId>spring-integration-http</artifactId>
+          <version>${spring-integration.version}</version>
+      </dependency>
+
+
+      <dependency>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+          <version>${junit.version}</version>
+          <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-context</artifactId>
+          <version>${spring.version}</version>
+          <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.springframework</groupId>
+          <artifactId>spring-test</artifactId>
+          <version>${spring.version}</version>
+          <scope>test</scope>
+      </dependency>
+
+      <!-- logging -->
+      <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+          <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>jcl-over-slf4j</artifactId>
+          <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>log4j-over-slf4j</artifactId>
+          <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>ch.qos.logback</groupId>
+          <artifactId>logback-core</artifactId>
+          <version>${logback.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>ch.qos.logback</groupId>
+          <artifactId>logback-classic</artifactId>
+          <version>${logback.version}</version>
+      </dependency>
+  </dependencies>
+  <build>
+    <finalName>eai-patterns</finalName>
+  </build>
+</project>
