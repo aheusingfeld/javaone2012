@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/integration"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+                  http://www.springframework.org/schema/beans/spring-beans.xsd
+                  http://www.springframework.org/schema/integration
+                  http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+
+    <gateway id="partnerGatewaySend"
+            service-interface="com.github.aheusingfeld.javaone2012.eai.gateways.CustomGateway"
+            default-request-channel="sample-channel"
+            default-reply-channel="non-matching-msg-channel"
+            default-reply-timeout="1000" />
+
+    <channel id="sample-channel"/>
+
+    <!-- sample filter: skip message without 'sample content' -->
+    <filter id="sample-filter"
+            input-channel="sample-channel"
+            output-channel="matching-msg-channel"
+            discard-channel="non-matching-msg-channel"
+            expression="payload?.contains('sample content')"/>
+
+    <channel id="matching-msg-channel"/>
+
+    <outbound-channel-adapter channel="matching-msg-channel" method="sendData">
+        <beans:bean class="com.github.aheusingfeld.javaone2012.eai.MyExternalSystemAdapter"/>
+    </outbound-channel-adapter>
+
+
+    <channel id="non-matching-msg-channel"/>
+
+</beans:beans>
