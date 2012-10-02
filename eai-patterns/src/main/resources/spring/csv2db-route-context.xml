@@ -10,8 +10,6 @@
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
 		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd">
 
-	<import resource="import-error-handler.xml" />
-
 	<!-- activate message history for all messages send -->
 	<int:message-history/>
 
@@ -70,8 +68,9 @@
 	<!-- BEGIN: 'services' -->
 	<int:channel id="service-imports" />
 
-	<int:chain id="service-split-and-filter-chain" input-channel="service-imports"
-		output-channel="service-imports-singlerow">
+	<int:chain id="service-split-and-filter-chain"
+               input-channel="service-imports"
+		       output-channel="service-imports-singlerow">
 		<int:splitter expression="payload.split('\n')" />
 		<int:filter expression="!'#{csvHeaders.services}'.equalsIgnoreCase(payload)" />
 	</int:chain>
@@ -81,10 +80,13 @@
 	<int:outbound-channel-adapter id="serviceImportChannelAdapter"
 		channel="service-imports-singlerow" ref="serviceImporter" method="processMessage" />
 
-	<bean id="serviceImporter" class="de.fittransporte.fitdb.importer.ServiceImporter"
-		parent="abstractImporter">
-		<property name="csvMapping"
-			value="datum;abteilung;auftrag;bewNr;bpcsNr;land;empf;adresse;upnr;preisklasse;bezeichnung;anzahl;preis;preisGesamt" />
+	<!-- DESCRIPTION:
+	    ServiceImporter is a custom class totally independent from Spring Integration. Spring Integration calls the
+	    above mentioned 'processMessage' method for each line in the imported CSV file. It hands over a String
+	    representation of this single line as a method parameter. -->
+    <bean id="serviceImporter" class="de.fittransporte.fitdb.importer.ServiceImporter" parent="abstractImporter">
+        <!-- NOTE: this inherits configuration from its parent, the 'abstractImporter' bean at the beginning of this file -->
+		<property name="csvMapping" value="datum;abteilung;auftrag;bewNr;bpcsNr;land;empf;adresse;upnr;preisklasse;bezeichnung;anzahl;preis;preisGesamt" />
 	</bean>
 	<!-- END: 'services' -->
 
@@ -93,19 +95,23 @@
 	<!-- BEGIN: 'pickings' -->
 	<int:channel id="picking-imports" />
 
-	<int:chain id="picking-split-and-filter-chain" input-channel="picking-imports"
-		output-channel="picking-imports-singlerow">
+	<int:chain id="picking-split-and-filter-chain"
+               input-channel="picking-imports"
+		       output-channel="picking-imports-singlerow">
 		<int:splitter expression="payload.split('\n')" />
 		<int:filter expression="!'#{csvHeaders.pickings}'.equalsIgnoreCase(payload)" />
 	</int:chain>
 
 	<int:channel id="picking-imports-singlerow" />
 
-	<int:outbound-channel-adapter id="pickingImportChannelAdapter"
-		channel="picking-imports-singlerow" ref="pickingImporter" method="processMessage" />
+	<int:outbound-channel-adapter
+            id="pickingImportChannelAdapter"
+		    channel="picking-imports-singlerow"
+            ref="pickingImporter"
+            method="processMessage" />
 
-	<bean id="pickingImporter" class="de.fittransporte.fitdb.importer.PickingImporter"
-		parent="abstractImporter">
+    <!-- inherits configuration from 'abstractImporter' bean -->
+	<bean id="pickingImporter" class="de.fittransporte.fitdb.importer.PickingImporter" parent="abstractImporter">
 		<property name="csvMapping"
 			value="datum;abteilung;auftrag;pos;preisklasse;bezeichnung;artikel;kurz;gewicht;anzahl;preis;preisGesamt" />
 	</bean>
@@ -115,7 +121,7 @@
 
     <int:channel id="unresolvable-abr-Input">
 		<int:interceptors>
-			<!-- each channel can have multiple interceptors; you can even write your own -->
+			<!-- each channel can have multiple interceptors; you can even write your own like the following -->
 			<bean class="de.fittransporte.fitdb.util.integration.LoggingChannelInterceptor"
 				p:level="DEBUG" 
 				p:expression="%{headers['id']} - %{payload}" />
