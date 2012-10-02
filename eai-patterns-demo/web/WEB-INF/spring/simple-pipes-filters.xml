@@ -7,7 +7,8 @@
                   http://www.springframework.org/schema/integration
                   http://www.springframework.org/schema/integration/spring-integration.xsd">
 
-    <inbound-channel-adapter channel="sample-channel"/>
+
+    <inbound-channel-adapter channel="sample-channel" />
 
     <channel id="sample-channel"/>
 
@@ -17,8 +18,9 @@
 
     <channel id="matching-msg-channel"/>
 
-    <outbound-channel-adapter channel="matching-msg-channel" ref="receiver" method="receive"/>
-    <beans:bean id="receiver" class="com.github.aheusingfeld.javaone2012.eai.gateways.Receiver"/>
+    <outbound-channel-adapter id="custom-adapter" channel="matching-msg-channel" ref="receiver" method="sendData"/>
+
+    <beans:bean id="receiver" class="com.github.aheusingfeld.javaone2012.eai.MyExternalSystemAdapter"/>
 
 
     <channel id="non-matching-msg-channel"/>
