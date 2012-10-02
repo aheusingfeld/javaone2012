@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-file="http://www.springframework.org/schema/integration/file"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.1.xsd
+		http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.1.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd">
+
+	<import resource="import-error-handler.xml" />
+
+	<!-- activate message history for all messages send -->
+	<int:message-history/>
+
+	<!-- headers of known csv files; used by the splitter to tell apart known and unknown formats -->
+	<util:map id="csvHeaders">
+		<entry key="services" value="DATUM;ABTEILUNG;AUFTRAG;BEW.NR;BPCS_Nr;LAND;EMPF;ADRESSE;UPNR;PREISKLASSE;BEZEICHNUNG;ANZAHL;PREIS;PREIS_GESAMT" />
+		<entry key="pickings" value="DATUM;ABTEILUNG;AUFTRAG;POS;PREISKLASSE;BEZEICHNUNG;ARTIKEL;KURZ;GEWICHT;ANZAHL;PREIS;PREIS_GESAMT" />
+	</util:map>
+
+	<!-- the following defines default properties for all ABR-importers -->
+	<bean id="abstractImporter" abstract="true">
+		<property name="escapeChar" value="'" />
+		<property name="originatorNumber" value="100" />
+		<property name="notificationChannel" ref="notificationChannel" />
+        <property name="messageSource" ref="fitMessageSource"/>
+        <property name="environment" value="${fit.system.environment}"/>
+	</bean>
+
+
+	<!-- Start of import workflow -->
+
+	<int-file:inbound-channel-adapter
+		directory="${catalina.base}/imports/abr/" 
+		filename-regex="^LOR_201.KW.*csv$"
+		auto-create-directory="true" 
+		prevent-duplicates="false" 
+		channel="incoming-abr-file">
+		<!-- poll the above mentioned directory every X milliseconds -->
+		<int:poller fixed-rate="10000" />
+	</int-file:inbound-channel-adapter>
+
+	<int:channel id="incoming-abr-file"/>
+
+	<!-- transform the FileInputStream into a String using the specified charset!! -->
+	<int-file:file-to-string-transformer
+		id="incoming-abr-file-reader" 
+		charset="ISO-8859-1" 
+		input-channel="incoming-abr-file"
+		output-channel="incoming-abr-string-data" 
+		delete-files="true" />
+
+	<int:channel id="incoming-abr-string-data" />
+
+	<int:router id="abr-import-type-router" 
+			resolution-required="false"
+			apply-sequence="true" 
+			expression="payload.split('\n')[0]"
+			default-output-channel="unresolvable-abr-Input" 
+			input-channel="incoming-abr-string-data">
+		<int:mapping channel="service-imports" value="#{csvHeaders.services}" />
+		<int:mapping channel="picking-imports" value="#{csvHeaders.pickings}" />
+		<!-- ... any more mappings if needed -->
+	</int:router>
+
+
+	<!-- BEGIN: 'services' -->
+	<int:channel id="service-imports" />
+
+	<int:chain id="service-split-and-filter-chain" input-channel="service-imports"
+		output-channel="service-imports-singlerow">
+		<int:splitter expression="payload.split('\n')" />
+		<int:filter expression="!'#{csvHeaders.services}'.equalsIgnoreCase(payload)" />
+	</int:chain>
+
+	<int:channel id="service-imports-singlerow" />
+
+	<int:outbound-channel-adapter id="serviceImportChannelAdapter"
+		channel="service-imports-singlerow" ref="serviceImporter" method="processMessage" />
+
+	<bean id="serviceImporter" class="de.fittransporte.fitdb.importer.ServiceImporter"
+		parent="abstractImporter">
+		<property name="csvMapping"
+			value="datum;abteilung;auftrag;bewNr;bpcsNr;land;empf;adresse;upnr;preisklasse;bezeichnung;anzahl;preis;preisGesamt" />
+	</bean>
+	<!-- END: 'services' -->
+
+
+
+	<!-- BEGIN: 'pickings' -->
+	<int:channel id="picking-imports" />
+
+	<int:chain id="picking-split-and-filter-chain" input-channel="picking-imports"
+		output-channel="picking-imports-singlerow">
+		<int:splitter expression="payload.split('\n')" />
+		<int:filter expression="!'#{csvHeaders.pickings}'.equalsIgnoreCase(payload)" />
+	</int:chain>
+
+	<int:channel id="picking-imports-singlerow" />
+
+	<int:outbound-channel-adapter id="pickingImportChannelAdapter"
+		channel="picking-imports-singlerow" ref="pickingImporter" method="processMessage" />
+
+	<bean id="pickingImporter" class="de.fittransporte.fitdb.importer.PickingImporter"
+		parent="abstractImporter">
+		<property name="csvMapping"
+			value="datum;abteilung;auftrag;pos;preisklasse;bezeichnung;artikel;kurz;gewicht;anzahl;preis;preisGesamt" />
+	</bean>
+	<!-- END: 'pickings' -->
+
+
+
+    <int:channel id="unresolvable-abr-Input">
+		<int:interceptors>
+			<!-- each channel can have multiple interceptors; you can even write your own -->
+			<bean class="de.fittransporte.fitdb.util.integration.LoggingChannelInterceptor"
+				p:level="DEBUG" 
+				p:expression="%{headers['id']} - %{payload}" />
+		</int:interceptors>
+	</int:channel>
+
+	<!-- catch unknown files send to the import folder and hand them over to the errorChannel for further processing -->
+    <int:chain input-channel="unresolvable-abr-Input" output-channel="errorChannel">
+        <int:filter expression="payload.indexOf('_WE_AUF.csv')==-1"/>
+        <int:filter expression="payload.indexOf('_WE Paletten.csv')==-1"/>
+		<!-- do a little more transformation before sending this to the 'errorChannel', so the actual problem comes clear -->
+        <int:transformer expression="'The content of the file ' + headers['file_originalFile'] + ' is unknown to the import routine! Content was:
+        ' + payload"/>
+    </int:chain>
+
+</beans>
