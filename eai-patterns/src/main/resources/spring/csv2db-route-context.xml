@@ -78,15 +78,20 @@
 	<int:channel id="service-imports-singlerow" />
 
 	<int:outbound-channel-adapter id="serviceImportChannelAdapter"
-		channel="service-imports-singlerow" ref="serviceImporter" method="processMessage" />
+		channel="service-imports-singlerow"
+        ref="serviceImporter"
+        method="processMessage" />
+
 
 	<!-- DESCRIPTION:
 	    ServiceImporter is a custom class totally independent from Spring Integration. Spring Integration calls the
 	    above mentioned 'processMessage' method for each line in the imported CSV file. It hands over a String
 	    representation of this single line as a method parameter. -->
     <bean id="serviceImporter" class="de.fittransporte.fitdb.importer.ServiceImporter" parent="abstractImporter">
+
         <!-- NOTE: this inherits configuration from its parent, the 'abstractImporter' bean at the beginning of this file -->
 		<property name="csvMapping" value="datum;abteilung;auftrag;bewNr;bpcsNr;land;empf;adresse;upnr;preisklasse;bezeichnung;anzahl;preis;preisGesamt" />
+
 	</bean>
 	<!-- END: 'services' -->
 
@@ -130,8 +135,6 @@
 
 	<!-- catch unknown files send to the import folder and hand them over to the errorChannel for further processing -->
     <int:chain input-channel="unresolvable-abr-Input" output-channel="errorChannel">
-        <int:filter expression="payload.indexOf('_WE_AUF.csv')==-1"/>
-        <int:filter expression="payload.indexOf('_WE Paletten.csv')==-1"/>
 		<!-- do a little more transformation before sending this to the 'errorChannel', so the actual problem comes clear -->
         <int:transformer expression="'The content of the file ' + headers['file_originalFile'] + ' is unknown to the import routine! Content was:
         ' + payload"/>
